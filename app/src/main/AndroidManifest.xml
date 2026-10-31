@@ -42,6 +42,10 @@
         </receiver>
 
         <receiver
+            android:name=".data.update.InstallReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".notify.SnoozeReceiver"
             android:exported="false" />
     </application>

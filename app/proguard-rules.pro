@@ -10,3 +10,5 @@
 -keep,allowobfuscation,allowshrinking class retrofit2.Response
 -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 -keep interface com.karelisio.trame.data.remote.** { *; }
+# Routes de navigation type-safe et modèles sérialisés
+-keep @kotlinx.serialization.Serializable class com.karelisio.trame.** { *; }

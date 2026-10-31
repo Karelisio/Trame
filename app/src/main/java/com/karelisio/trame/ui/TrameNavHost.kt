@@ -23,6 +23,8 @@ import com.karelisio.trame.ui.search.SearchScreen
 import com.karelisio.trame.ui.search.SearchViewModel
 import com.karelisio.trame.ui.settings.SettingsScreen
 import com.karelisio.trame.ui.settings.PermissionsScreen
+import com.karelisio.trame.ui.update.UpdateSheet
+import com.karelisio.trame.ui.update.UpdateViewModel
 import com.karelisio.trame.ui.onboarding.OnboardingScreen
 import androidx.navigation.NavDestination.Companion.hasRoute
 import com.karelisio.trame.ui.reader.WebReaderScreen
@@ -63,6 +65,8 @@ fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>, startOnboarding: 
         }
     }
     val app = LocalContext.current.applicationContext as TrameApp
+    val updates: UpdateViewModel = viewModel()
+    UpdateSheet(updates)
     SharedTransitionLayout {
         CompositionLocalProvider(LocalSharedTransitionScope provides this) {
             NavHost(nav, startDestination = if (startOnboarding) OnboardingRoute else LibraryRoute) {
@@ -131,7 +135,7 @@ fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>, startOnboarding: 
                     CalendarScreen(app.repository, onBack = { nav.popBackStack() }, onOpen = { nav.navigate(DetailRoute(it)) })
                 }
                 screen<SettingsRoute> {
-                    SettingsScreen(app.settings, app.repository, onBack = { nav.popBackStack() }, onPermissions = { nav.navigate(PermissionsRoute) })
+                    SettingsScreen(app.settings, app.repository, onBack = { nav.popBackStack() }, onPermissions = { nav.navigate(PermissionsRoute) }, onCheckUpdate = { updates.check(force = true) })
                 }
                 screen<PermissionsRoute> {
                     PermissionsScreen(onBack = { nav.popBackStack() })

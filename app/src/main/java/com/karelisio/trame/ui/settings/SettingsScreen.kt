@@ -32,7 +32,7 @@ import com.karelisio.trame.data.repo.SettingsRepository
 import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsScreen(settings: SettingsRepository, repo: MangaRepository, onBack: () -> Unit, onPermissions: () -> Unit) {
+fun SettingsScreen(settings: SettingsRepository, repo: MangaRepository, onBack: () -> Unit, onPermissions: () -> Unit, onCheckUpdate: () -> Unit) {
     val lang by settings.language.collectAsStateWithLifecycle(ChapterLanguage.EN)
     val interval by settings.checkIntervalHours.collectAsStateWithLifecycle(2)
     val scope = rememberCoroutineScope()
@@ -91,6 +91,13 @@ fun SettingsScreen(settings: SettingsRepository, repo: MangaRepository, onBack: 
             ) { Text("Vérifier maintenant") }
             Text("Système", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 28.dp, bottom = 8.dp))
             FilledTonalButton(onClick = onPermissions) { Text("Autorisations") }
+            FilledTonalButton(onClick = onCheckUpdate, modifier = Modifier.padding(top = 8.dp)) { Text("Rechercher une mise à jour") }
+            Text(
+                "Version ${com.karelisio.trame.BuildConfig.VERSION_NAME} (${com.karelisio.trame.BuildConfig.VERSION_CODE})",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
             Text(
                 "Sources : MangaDex (api.mangadex.org), MangaUpdates en secours. Lecture officielle via MANGA Plus.",
                 style = MaterialTheme.typography.labelMedium,
