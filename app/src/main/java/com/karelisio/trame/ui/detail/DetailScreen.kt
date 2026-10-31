@@ -66,6 +66,7 @@ import com.karelisio.trame.ui.components.cascadeIn
 import com.karelisio.trame.ui.components.sharedElement
 import com.karelisio.trame.ui.components.statusLabel
 import com.karelisio.trame.ui.library.SourceFooter
+import com.karelisio.trame.ui.calendar.ReleaseCard
 import com.karelisio.trame.ui.search.FavoriteMorphButton
 import java.text.DateFormat
 import java.util.Date
@@ -76,6 +77,7 @@ fun DetailScreen(vm: DetailViewModel, onBack: () -> Unit, onRead: (chapterId: St
     val chapters by vm.chapters.collectAsStateWithLifecycle()
     val loading by vm.loading.collectAsStateWithLifecycle()
     val error by vm.error.collectAsStateWithLifecycle()
+    val estimate by vm.estimate.collectAsStateWithLifecycle()
     val haptics = LocalHapticFeedback.current
     var menu by remember { mutableStateOf(false) }
     val series = item?.series
@@ -109,6 +111,9 @@ fun DetailScreen(vm: DetailViewModel, onBack: () -> Unit, onRead: (chapterId: St
                         Text("Lire le chapitre ${c.number ?: "?"}", style = MaterialTheme.typography.titleMedium)
                     }
                 }
+            }
+            estimate?.let { e ->
+                item(key = "release") { ReleaseCard(e, Modifier.padding(horizontal = 20.dp, vertical = 8.dp).animateItem()) }
             }
             series?.description?.let { desc ->
                 item { Synopsis(desc) }

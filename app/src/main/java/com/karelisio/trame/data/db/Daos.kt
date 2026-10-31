@@ -82,6 +82,9 @@ interface ChapterDao {
     @Query("SELECT MAX(numberValue) FROM chapters WHERE seriesId = :seriesId AND readAt IS NOT NULL")
     suspend fun maxRead(seriesId: String): Double?
 
+    @Query("SELECT c.seriesId, c.numberValue, c.publishAt FROM chapters c JOIN series s ON s.id = c.seriesId WHERE s.isFavorite = 1")
+    fun observeReleaseRows(): Flow<List<ReleaseRow>>
+
     @Query("SELECT * FROM chapters WHERE readAt IS NOT NULL")
     suspend fun allRead(): List<ChapterEntity>
 }

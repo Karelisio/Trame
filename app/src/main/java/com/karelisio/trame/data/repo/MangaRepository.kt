@@ -17,6 +17,10 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import com.karelisio.trame.domain.ReleaseEstimate
+import com.karelisio.trame.domain.ReleaseEstimator
+import com.karelisio.trame.domain.ReleaseStatus
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -32,6 +36,8 @@ data class SeriesSummary(
     val year: Int?,
     val source: SeriesSource,
 )
+
+data class CalendarEntry(val item: LibraryItem, val estimate: ReleaseEstimate?)
 
 data class SearchOutcome(val results: List<SeriesSummary>, val source: SeriesSource)
 
@@ -134,6 +140,24 @@ class MangaRepository(
             async { s to gate.withPermit { runCatching { refreshSeries(s.id) }.getOrDefault(emptyList()) } }
         }.awaitAll().toMap()
     }
+
+    // --- Calendrier ---------------------------------------------------------
+
+    /** Séries suivies avec leur prochaine sortie estimée, triées par date. */
+    fun observeCalendar(): Flow<List<CalendarEntry>> =
+        combine(seriesDao.observeLibrary(), chapterDao.observeReleaseRows()) { lib, rows ->
+            val bySeries = rows.groupBy { it.seriesId }
+            lib.map { item ->
+                val r = bySeries[item.series.id].orEmpty().map { it.numberValue to it.publishAt }
+                CalendarEntry(item, ReleaseEstimator.estimate(r, item.series.status))
+            }.sortedWith(compareBy<CalendarEntry> { it.estimate == null }.thenBy { it.estimate?.status == ReleaseStatus.ENDED }
+                .thenBy { it.estimate?.status == ReleaseStatus.PAUSE_LIKELY }.thenBy { it.estimate?.nextAt ?: Long.MAX_VALUE })
+        }
+
+    fun observeEstimate(seriesId: String): Flow<ReleaseEstimate?> =
+        combine(seriesDao.observeItem(seriesId), chapterDao.observeForSeries(seriesId)) { item, chapters ->
+            ReleaseEstimator.estimate(chapters.map { it.numberValue to it.publishAt }, item?.series?.status)
+        }
 
     // --- Progression -------------------------------------------------------
 

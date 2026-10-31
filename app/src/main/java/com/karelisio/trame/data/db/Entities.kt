@@ -80,3 +80,5 @@ data class LocalBookEntity(
     val lastOpenedAt: Long = 0,
     val coverUri: String? = null,
 )
+
+data class ReleaseRow(val seriesId: String, val numberValue: Double?, val publishAt: Long)

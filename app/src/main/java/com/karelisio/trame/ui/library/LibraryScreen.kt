@@ -25,6 +25,16 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.karelisio.trame.domain.ReleaseEstimate
+import com.karelisio.trame.domain.ReleaseStatus
+import com.karelisio.trame.ui.components.rememberNow
+import com.karelisio.trame.ui.components.shortUntil
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.ContainedLoadingIndicator
@@ -72,10 +82,13 @@ fun LibraryScreen(
     onSettings: () -> Unit,
     onHistory: () -> Unit,
     onLocal: () -> Unit,
+    onCalendar: () -> Unit,
 ) {
     val items by vm.items.collectAsStateWithLifecycle()
     val refreshing by vm.refreshing.collectAsStateWithLifecycle()
     val newChapters by vm.newChapters.collectAsStateWithLifecycle()
+    val estimates by vm.estimates.collectAsStateWithLifecycle()
+    var overflow by remember { mutableStateOf(false) }
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val snackbar = remember { SnackbarHostState() }
     val haptics = LocalHapticFeedback.current
@@ -105,9 +118,27 @@ fun LibraryScreen(
                 },
                 actions = {
                     IconButton(onClick = onSearch) { Icon(Icons.Rounded.Search, "Rechercher") }
-                    IconButton(onClick = onLocal) { Icon(Icons.Rounded.FolderOpen, "Fichiers locaux") }
-                    IconButton(onClick = onHistory) { Icon(Icons.Rounded.History, "Historique") }
-                    IconButton(onClick = onSettings) { Icon(Icons.Rounded.Settings, "Réglages") }
+                    IconButton(onClick = onCalendar) { Icon(Icons.Rounded.CalendarMonth, "Calendrier") }
+                    Box {
+                        IconButton(onClick = { overflow = true }) { Icon(Icons.Rounded.MoreVert, "Plus") }
+                        DropdownMenu(expanded = overflow, onDismissRequest = { overflow = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Fichiers locaux") },
+                                leadingIcon = { Icon(Icons.Rounded.FolderOpen, null) },
+                                onClick = { overflow = false; onLocal() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Historique") },
+                                leadingIcon = { Icon(Icons.Rounded.History, null) },
+                                onClick = { overflow = false; onHistory() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Réglages") },
+                                leadingIcon = { Icon(Icons.Rounded.Settings, null) },
+                                onClick = { overflow = false; onSettings() },
+                            )
+                        }
+                    }
                 },
                 scrollBehavior = scroll,
             )
@@ -151,6 +182,7 @@ fun LibraryScreen(
                     itemsIndexed(list) { index, item ->
                         SeriesCard(
                             item,
+                            estimates[item.series.id],
                             onClick = { onOpenSeries(item.series.id) },
                             modifier = Modifier.animateItem().cascadeIn(index, item.series.id),
                         )
@@ -163,7 +195,7 @@ fun LibraryScreen(
 }
 
 @Composable
-private fun SeriesCard(item: LibraryItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun SeriesCard(item: LibraryItem, estimate: ReleaseEstimate?, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val s = item.series
     Column(modifier.clip(MaterialTheme.shapes.large).clickable(onClick = onClick)) {
         Box {
@@ -197,6 +229,16 @@ private fun SeriesCard(item: LibraryItem, onClick: () -> Unit, modifier: Modifie
                 "Chapitre $it",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+        }
+        estimate?.takeIf { it.status != ReleaseStatus.ENDED }?.let { e ->
+            val now = rememberNow(60_000)
+            Text(
+                if (e.status == ReleaseStatus.PAUSE_LIKELY) "Pause probable"
+                else "Ch. ${e.nextChapter ?: "?"} ${shortUntil(e.nextAt, now)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (e.status == ReleaseStatus.PAUSE_LIKELY) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 4.dp),
             )
         }

@@ -18,6 +18,8 @@ class DetailViewModel(private val repo: MangaRepository, val seriesId: String) :
     val chapters: StateFlow<List<ChapterEntity>?> =
         repo.observeChapters(seriesId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    val estimate = repo.observeEstimate(seriesId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     private val _loading = MutableStateFlow(false)
     val loading = _loading.asStateFlow()
     private val _error = MutableStateFlow(false)

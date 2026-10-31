@@ -25,6 +25,7 @@ import com.karelisio.trame.ui.settings.SettingsScreen
 import com.karelisio.trame.ui.reader.WebReaderScreen
 import com.karelisio.trame.ui.reader.WebReaderViewModel
 import com.karelisio.trame.ui.history.HistoryScreen
+import com.karelisio.trame.ui.calendar.CalendarScreen
 import com.karelisio.trame.ui.local.LocalLibraryScreen
 import com.karelisio.trame.ui.local.LocalReaderScreen
 import com.karelisio.trame.ui.local.LocalReaderViewModel
@@ -42,6 +43,7 @@ import com.karelisio.trame.ReadRequest
 @Serializable data class ReaderRoute(val seriesId: String, val chapterId: String? = null)
 @Serializable object HistoryRoute
 @Serializable object LocalRoute
+@Serializable object CalendarRoute
 @Serializable data class LocalReaderRoute(val uri: String)
 
 @Composable
@@ -66,6 +68,7 @@ fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
                         onSettings = { nav.navigate(SettingsRoute) },
                         onHistory = { nav.navigate(HistoryRoute) },
                         onLocal = { nav.navigate(LocalRoute) },
+                        onCalendar = { nav.navigate(CalendarRoute) },
                     )
                 }
                 screen<SearchRoute> {
@@ -110,6 +113,9 @@ fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
                         vm = viewModel(key = uri) { LocalReaderViewModel(app, uri) },
                         onBack = { nav.popBackStack() },
                     )
+                }
+                screen<CalendarRoute> {
+                    CalendarScreen(app.repository, onBack = { nav.popBackStack() }, onOpen = { nav.navigate(DetailRoute(it)) })
                 }
                 screen<SettingsRoute> {
                     SettingsScreen(app.settings, app.repository, onBack = { nav.popBackStack() })
