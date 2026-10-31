@@ -23,6 +23,11 @@ import com.karelisio.trame.ui.search.SearchScreen
 import com.karelisio.trame.ui.search.SearchViewModel
 import com.karelisio.trame.ui.settings.SettingsScreen
 import kotlinx.serialization.Serializable
+import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.karelisio.trame.ReadRequest
 
 @Serializable object LibraryRoute
 @Serializable object SearchRoute
@@ -30,8 +35,16 @@ import kotlinx.serialization.Serializable
 @Serializable data class DetailRoute(val id: String)
 
 @Composable
-fun TrameNavHost() {
+fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
     val nav = rememberNavController()
+    val request by readRequests.collectAsState()
+    LaunchedEffect(request) {
+        // Étape 3 : ouvrira directement le lecteur sur le chapitre.
+        request?.let {
+            nav.navigate(DetailRoute(it.seriesId)) { launchSingleTop = true }
+            readRequests.value = null
+        }
+    }
     val app = LocalContext.current.applicationContext as TrameApp
     SharedTransitionLayout {
         CompositionLocalProvider(LocalSharedTransitionScope provides this) {
