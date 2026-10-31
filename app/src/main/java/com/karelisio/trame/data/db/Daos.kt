@@ -105,3 +105,24 @@ interface HistoryDao {
     @Query("DELETE FROM history")
     suspend fun clear()
 }
+
+@Dao
+interface LocalBookDao {
+    @Query("SELECT * FROM local_books ORDER BY lastOpenedAt DESC")
+    fun observeAll(): Flow<List<LocalBookEntity>>
+
+    @Query("SELECT * FROM local_books WHERE uri = :uri")
+    suspend fun get(uri: String): LocalBookEntity?
+
+    @Upsert
+    suspend fun upsert(book: LocalBookEntity)
+
+    @Query("UPDATE local_books SET lastPage = :page, lastOpenedAt = :now WHERE uri = :uri")
+    suspend fun setProgress(uri: String, page: Int, now: Long)
+
+    @Query("UPDATE local_books SET pageCount = :count, coverUri = :cover WHERE uri = :uri")
+    suspend fun setInfo(uri: String, count: Int, cover: String?)
+
+    @Query("DELETE FROM local_books WHERE uri = :uri")
+    suspend fun delete(uri: String)
+}

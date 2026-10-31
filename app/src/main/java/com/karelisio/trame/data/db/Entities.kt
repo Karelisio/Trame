@@ -68,3 +68,15 @@ data class HistoryRow(
     val seriesTitle: String,
     val coverUrl: String?,
 )
+
+/** Fichier local (CBZ/ZIP ou dossier d'images) ouvert via le sélecteur de documents. */
+@Entity(tableName = "local_books")
+data class LocalBookEntity(
+    @PrimaryKey val uri: String,
+    val name: String,
+    val isFolder: Boolean,
+    val pageCount: Int = 0,
+    val lastPage: Int = 0,
+    val lastOpenedAt: Long = 0,
+    val coverUri: String? = null,
+)

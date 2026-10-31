@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -70,6 +71,7 @@ fun LibraryScreen(
     onSearch: () -> Unit,
     onSettings: () -> Unit,
     onHistory: () -> Unit,
+    onLocal: () -> Unit,
 ) {
     val items by vm.items.collectAsStateWithLifecycle()
     val refreshing by vm.refreshing.collectAsStateWithLifecycle()
@@ -103,6 +105,7 @@ fun LibraryScreen(
                 },
                 actions = {
                     IconButton(onClick = onSearch) { Icon(Icons.Rounded.Search, "Rechercher") }
+                    IconButton(onClick = onLocal) { Icon(Icons.Rounded.FolderOpen, "Fichiers locaux") }
                     IconButton(onClick = onHistory) { Icon(Icons.Rounded.History, "Historique") }
                     IconButton(onClick = onSettings) { Icon(Icons.Rounded.Settings, "Réglages") }
                 },

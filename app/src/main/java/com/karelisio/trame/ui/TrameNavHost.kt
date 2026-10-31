@@ -25,6 +25,9 @@ import com.karelisio.trame.ui.settings.SettingsScreen
 import com.karelisio.trame.ui.reader.WebReaderScreen
 import com.karelisio.trame.ui.reader.WebReaderViewModel
 import com.karelisio.trame.ui.history.HistoryScreen
+import com.karelisio.trame.ui.local.LocalLibraryScreen
+import com.karelisio.trame.ui.local.LocalReaderScreen
+import com.karelisio.trame.ui.local.LocalReaderViewModel
 import kotlinx.serialization.Serializable
 import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +41,8 @@ import com.karelisio.trame.ReadRequest
 @Serializable data class DetailRoute(val id: String)
 @Serializable data class ReaderRoute(val seriesId: String, val chapterId: String? = null)
 @Serializable object HistoryRoute
+@Serializable object LocalRoute
+@Serializable data class LocalReaderRoute(val uri: String)
 
 @Composable
 fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
@@ -60,6 +65,7 @@ fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
                         onSearch = { nav.navigate(SearchRoute) },
                         onSettings = { nav.navigate(SettingsRoute) },
                         onHistory = { nav.navigate(HistoryRoute) },
+                        onLocal = { nav.navigate(LocalRoute) },
                     )
                 }
                 screen<SearchRoute> {
@@ -89,6 +95,20 @@ fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
                         app.repository,
                         onBack = { nav.popBackStack() },
                         onOpen = { nav.navigate(DetailRoute(it.seriesId)) },
+                    )
+                }
+                screen<LocalRoute> {
+                    LocalLibraryScreen(
+                        app.database.localBooks(),
+                        onBack = { nav.popBackStack() },
+                        onOpen = { nav.navigate(LocalReaderRoute(it)) },
+                    )
+                }
+                screen<LocalReaderRoute> { entry ->
+                    val uri = entry.toRoute<LocalReaderRoute>().uri
+                    LocalReaderScreen(
+                        vm = viewModel(key = uri) { LocalReaderViewModel(app, uri) },
+                        onBack = { nav.popBackStack() },
                     )
                 }
                 screen<SettingsRoute> {
