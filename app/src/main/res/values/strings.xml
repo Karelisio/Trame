@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Trame</string>
+    <string name="widget_description">Prochain chapitre de ta série : compte à rebours ou « Nouveau ! »</string>
+</resources>
