@@ -22,6 +22,9 @@ import com.karelisio.trame.ui.library.LibraryViewModel
 import com.karelisio.trame.ui.search.SearchScreen
 import com.karelisio.trame.ui.search.SearchViewModel
 import com.karelisio.trame.ui.settings.SettingsScreen
+import com.karelisio.trame.ui.reader.WebReaderScreen
+import com.karelisio.trame.ui.reader.WebReaderViewModel
+import com.karelisio.trame.ui.history.HistoryScreen
 import kotlinx.serialization.Serializable
 import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.runtime.LaunchedEffect
@@ -33,15 +36,16 @@ import com.karelisio.trame.ReadRequest
 @Serializable object SearchRoute
 @Serializable object SettingsRoute
 @Serializable data class DetailRoute(val id: String)
+@Serializable data class ReaderRoute(val seriesId: String, val chapterId: String? = null)
+@Serializable object HistoryRoute
 
 @Composable
 fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
     val nav = rememberNavController()
     val request by readRequests.collectAsState()
     LaunchedEffect(request) {
-        // Étape 3 : ouvrira directement le lecteur sur le chapitre.
         request?.let {
-            nav.navigate(DetailRoute(it.seriesId)) { launchSingleTop = true }
+            nav.navigate(ReaderRoute(it.seriesId, it.chapterId)) { launchSingleTop = true }
             readRequests.value = null
         }
     }
@@ -55,6 +59,7 @@ fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
                         onOpenSeries = { nav.navigate(DetailRoute(it)) },
                         onSearch = { nav.navigate(SearchRoute) },
                         onSettings = { nav.navigate(SettingsRoute) },
+                        onHistory = { nav.navigate(HistoryRoute) },
                     )
                 }
                 screen<SearchRoute> {
@@ -69,6 +74,21 @@ fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
                     DetailScreen(
                         vm = viewModel(key = id) { DetailViewModel(app.repository, id) },
                         onBack = { nav.popBackStack() },
+                        onRead = { nav.navigate(ReaderRoute(id, it)) },
+                    )
+                }
+                screen<ReaderRoute> { entry ->
+                    val r = entry.toRoute<ReaderRoute>()
+                    WebReaderScreen(
+                        vm = viewModel(key = "${r.seriesId}/${r.chapterId}") { WebReaderViewModel(app.repository, r.seriesId, r.chapterId) },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
+                screen<HistoryRoute> {
+                    HistoryScreen(
+                        app.repository,
+                        onBack = { nav.popBackStack() },
+                        onOpen = { nav.navigate(DetailRoute(it.seriesId)) },
                     )
                 }
                 screen<SettingsRoute> {

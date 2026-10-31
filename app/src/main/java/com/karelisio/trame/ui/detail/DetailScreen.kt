@@ -1,10 +1,10 @@
 package com.karelisio.trame.ui.detail
 
-import android.content.Intent
 import android.os.Build
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +25,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.remember
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
@@ -44,10 +53,10 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karelisio.trame.data.db.ChapterEntity
 import com.karelisio.trame.ui.components.BubbleBadge
@@ -62,12 +71,13 @@ import java.text.DateFormat
 import java.util.Date
 
 @Composable
-fun DetailScreen(vm: DetailViewModel, onBack: () -> Unit) {
+fun DetailScreen(vm: DetailViewModel, onBack: () -> Unit, onRead: (chapterId: String) -> Unit) {
     val item by vm.item.collectAsStateWithLifecycle()
     val chapters by vm.chapters.collectAsStateWithLifecycle()
     val loading by vm.loading.collectAsStateWithLifecycle()
     val error by vm.error.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
+    var menu by remember { mutableStateOf(false) }
     val series = item?.series
     val readThrough = maxOf(series?.baselineChapter ?: -1.0, series?.lastReadChapter ?: -1.0)
 
@@ -87,6 +97,19 @@ fun DetailScreen(vm: DetailViewModel, onBack: () -> Unit) {
                     onToggleFavorite = vm::toggleFavorite,
                 )
             }
+            continueChapter(chapters.orEmpty(), readThrough)?.let { c ->
+                item {
+                    Button(
+                        onClick = { onRead(c.id) },
+                        shapes = ButtonDefaults.shapes(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp).height(56.dp),
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.MenuBook, null)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Lire le chapitre ${c.number ?: "?"}", style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+            }
             series?.description?.let { desc ->
                 item { Synopsis(desc) }
             }
@@ -99,6 +122,13 @@ fun DetailScreen(vm: DetailViewModel, onBack: () -> Unit) {
                             modifier = Modifier.weight(1f),
                         )
                         FilledTonalIconButton(onClick = vm::refresh) { Icon(Icons.Rounded.Refresh, "Actualiser") }
+                        Box {
+                            IconButton(onClick = { menu = true }) { Icon(Icons.Rounded.MoreVert, "Plus") }
+                            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                                DropdownMenuItem(text = { Text("Tout marquer comme lu") }, onClick = { menu = false; vm.setAllRead(true) })
+                                DropdownMenuItem(text = { Text("Tout marquer comme non lu") }, onClick = { menu = false; vm.setAllRead(false) })
+                            }
+                        }
                     }
                     if (loading) LinearWavyProgressIndicator(Modifier.fillMaxWidth().padding(vertical = 8.dp))
                     if (error && chapters.isNullOrEmpty()) {
@@ -117,9 +147,10 @@ fun DetailScreen(vm: DetailViewModel, onBack: () -> Unit) {
                     c,
                     isNew = c.readAt == null && (c.numberValue ?: -1.0) > readThrough,
                     modifier = Modifier.cascadeIn(i, c.id),
-                    onClick = {
-                        // Étape 3 : lecteur WebView intégré. En attendant, lien officiel.
-                        c.externalUrl?.let { context.startActivity(Intent(Intent.ACTION_VIEW, it.toUri())) }
+                    onClick = { onRead(c.id) },
+                    onLongClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        vm.toggleRead(c)
                     },
                 )
             }
@@ -199,7 +230,7 @@ private fun Synopsis(text: String) {
 }
 
 @Composable
-private fun ChapterRow(c: ChapterEntity, isNew: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun ChapterRow(c: ChapterEntity, isNew: Boolean, onClick: () -> Unit, onLongClick: () -> Unit, modifier: Modifier = Modifier) {
     val read = c.readAt != null
     ListItem(
         headlineContent = { Text("Chapitre ${c.number ?: "?"}", style = MaterialTheme.typography.titleMedium) },
@@ -214,6 +245,7 @@ private fun ChapterRow(c: ChapterEntity, isNew: Boolean, onClick: () -> Unit, mo
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (isNew) BubbleBadge("Nouveau")
+                if (read) Icon(Icons.Rounded.Check, "Lu", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (c.externalUrl != null) {
                     Spacer(Modifier.width(8.dp))
                     Icon(Icons.AutoMirrored.Rounded.OpenInNew, "MANGA Plus", tint = MaterialTheme.colorScheme.primary)
@@ -224,7 +256,13 @@ private fun ChapterRow(c: ChapterEntity, isNew: Boolean, onClick: () -> Unit, mo
         modifier = modifier
             .padding(horizontal = 8.dp)
             .clip(MaterialTheme.shapes.large)
-            .clickable(enabled = c.externalUrl != null, onClick = onClick)
+            .combinedClickable(onClick = { if (c.externalUrl != null) onClick() }, onLongClick = onLongClick)
             .alpha(if (read) 0.55f else 1f),
     )
+}
+
+/** Prochain chapitre officiel à lire : le premier non lu au-dessus de la progression, sinon le plus récent. */
+private fun continueChapter(chapters: List<ChapterEntity>, readThrough: Double): ChapterEntity? {
+    val readable = chapters.filter { it.externalUrl != null }.sortedBy { it.numberValue ?: 0.0 }
+    return readable.firstOrNull { it.readAt == null && (it.numberValue ?: -1.0) > readThrough } ?: readable.lastOrNull()
 }

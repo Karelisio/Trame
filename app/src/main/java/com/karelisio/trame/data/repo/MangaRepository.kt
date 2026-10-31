@@ -1,6 +1,7 @@
 package com.karelisio.trame.data.repo
 
 import com.karelisio.trame.data.db.ChapterEntity
+import com.karelisio.trame.data.db.HistoryEntity
 import com.karelisio.trame.data.db.LibraryItem
 import com.karelisio.trame.data.db.SeriesEntity
 import com.karelisio.trame.data.db.SeriesSource
@@ -132,6 +133,29 @@ class MangaRepository(
         seriesDao.favorites().map { s ->
             async { s to gate.withPermit { runCatching { refreshSeries(s.id) }.getOrDefault(emptyList()) } }
         }.awaitAll().toMap()
+    }
+
+    // --- Progression -------------------------------------------------------
+
+    fun observeHistory() = db.history().observeRecent()
+
+    suspend fun chapter(id: String) = chapterDao.get(id)
+
+    /** Marque un chapitre lu / non lu et met à jour le dernier chapitre lu de la série. */
+    suspend fun setRead(chapter: ChapterEntity, read: Boolean) {
+        val now = System.currentTimeMillis()
+        chapterDao.setReadAt(chapter.id, if (read) now else null)
+        if (read) {
+            db.history().insert(HistoryEntity(seriesId = chapter.seriesId, chapterId = chapter.id, chapterNumber = chapter.number, readAt = now))
+        } else {
+            db.history().deleteFor(chapter.seriesId, chapter.id)
+        }
+        seriesDao.setLastRead(chapter.seriesId, chapterDao.maxRead(chapter.seriesId))
+    }
+
+    suspend fun setAllRead(seriesId: String, read: Boolean) {
+        if (read) chapterDao.markAllRead(seriesId, System.currentTimeMillis()) else chapterDao.markAllUnread(seriesId)
+        seriesDao.setLastRead(seriesId, chapterDao.maxRead(seriesId))
     }
 
     /** One Piece pré-ajouté au premier lancement. */

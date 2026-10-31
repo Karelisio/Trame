@@ -58,3 +58,13 @@ data class LibraryItem(
     @Embedded val series: SeriesEntity,
     val unread: Int,
 )
+
+data class HistoryRow(
+    val id: Long,
+    val seriesId: String,
+    val chapterId: String?,
+    val chapterNumber: String?,
+    val readAt: Long,
+    val seriesTitle: String,
+    val coverUrl: String?,
+)

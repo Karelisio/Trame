@@ -33,6 +33,14 @@ class DetailViewModel(private val repo: MangaRepository, val seriesId: String) :
         }
     }
 
+    fun toggleRead(c: ChapterEntity) {
+        viewModelScope.launch { repo.setRead(c, c.readAt == null) }
+    }
+
+    fun setAllRead(read: Boolean) {
+        viewModelScope.launch { repo.setAllRead(seriesId, read) }
+    }
+
     fun toggleFavorite() {
         val fav = item.value?.series?.isFavorite ?: return
         viewModelScope.launch { repo.setFavorite(seriesId, !fav) }

@@ -67,6 +67,21 @@ interface ChapterDao {
     @Query("DELETE FROM chapters WHERE seriesId = :seriesId AND language != :language")
     suspend fun deleteOtherLanguages(seriesId: String, language: String)
 
+    @Query("SELECT * FROM chapters WHERE id = :id")
+    suspend fun get(id: String): ChapterEntity?
+
+    @Query("UPDATE chapters SET readAt = :readAt WHERE id = :id")
+    suspend fun setReadAt(id: String, readAt: Long?)
+
+    @Query("UPDATE chapters SET readAt = :now WHERE seriesId = :seriesId AND readAt IS NULL")
+    suspend fun markAllRead(seriesId: String, now: Long)
+
+    @Query("UPDATE chapters SET readAt = NULL WHERE seriesId = :seriesId")
+    suspend fun markAllUnread(seriesId: String)
+
+    @Query("SELECT MAX(numberValue) FROM chapters WHERE seriesId = :seriesId AND readAt IS NOT NULL")
+    suspend fun maxRead(seriesId: String): Double?
+
     @Query("SELECT * FROM chapters WHERE readAt IS NOT NULL")
     suspend fun allRead(): List<ChapterEntity>
 }
@@ -76,8 +91,12 @@ interface HistoryDao {
     @Insert
     suspend fun insert(entry: HistoryEntity)
 
-    @Query("SELECT * FROM history ORDER BY readAt DESC LIMIT :limit")
-    fun observeRecent(limit: Int = 200): Flow<List<HistoryEntity>>
+    @Query("""SELECT h.id, h.seriesId, h.chapterId, h.chapterNumber, h.readAt, s.title AS seriesTitle, s.coverUrl AS coverUrl
+        FROM history h JOIN series s ON s.id = h.seriesId ORDER BY h.readAt DESC LIMIT :limit""")
+    fun observeRecent(limit: Int = 300): Flow<List<HistoryRow>>
+
+    @Query("DELETE FROM history WHERE seriesId = :seriesId AND chapterId = :chapterId")
+    suspend fun deleteFor(seriesId: String, chapterId: String)
 
     @Query("SELECT * FROM history ORDER BY readAt DESC")
     suspend fun all(): List<HistoryEntity>
