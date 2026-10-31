@@ -36,7 +36,10 @@ import com.karelisio.trame.data.repo.CalendarEntry
 import com.karelisio.trame.data.repo.MangaRepository
 import com.karelisio.trame.domain.DAY
 import com.karelisio.trame.domain.ReleaseStatus
-import com.karelisio.trame.ui.components.BubbleBadge
+import com.karelisio.trame.ui.components.UnreadBubble
+import com.karelisio.trame.ui.components.pressBounce
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.runtime.remember
 import com.karelisio.trame.ui.components.Countdown
 import com.karelisio.trame.ui.components.Cover
 import com.karelisio.trame.ui.components.cascadeIn
@@ -102,14 +105,21 @@ fun CalendarScreen(repo: MangaRepository, onBack: () -> Unit, onOpen: (String) -
 private fun CalendarRow(e: CalendarEntry, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val s = e.item.series
     val est = e.estimate
-    Surface(onClick = onClick, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = modifier.fillMaxWidth()) {
+    val interaction = remember { MutableInteractionSource() }
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        interactionSource = interaction,
+        modifier = modifier.pressBounce(interaction, 0.97f).fillMaxWidth(),
+    ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Cover(s.coverUrl, s.title, Modifier.sharedElement("cover-${s.id}").width(64.dp).height(92.dp).clip(MaterialTheme.shapes.medium))
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(s.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                    if (e.item.unread > 0) { Spacer(Modifier.width(6.dp)); BubbleBadge("Nouveau !") }
+                    if (e.item.unread > 0) { Spacer(Modifier.width(6.dp)); UnreadBubble(e.item.unread) }
                 }
                 when {
                     est == null -> Text("Pas assez de chapitres datés", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

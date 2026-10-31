@@ -24,18 +24,18 @@ class LibraryViewModel(private val repo: MangaRepository) : ViewModel() {
     private val _refreshing = MutableStateFlow(false)
     val refreshing = _refreshing.asStateFlow()
 
-    private val _newChapters = MutableStateFlow(0)
-    /** Nombre de nouveaux chapitres trouvés au dernier rafraîchissement manuel. */
-    val newChapters = _newChapters.asStateFlow()
+    private val _refreshResult = MutableStateFlow<Int?>(null)
+    /** Nouveaux chapitres trouvés au dernier rafraîchissement manuel (null = rien à signaler). */
+    val refreshResult = _refreshResult.asStateFlow()
 
     fun refresh() {
         if (_refreshing.value) return
         viewModelScope.launch {
             _refreshing.value = true
-            _newChapters.value = repo.refreshAll().values.sumOf { it.size }
+            _refreshResult.value = repo.refreshAll().values.sumOf { it.size }
             _refreshing.value = false
         }
     }
 
-    fun consumeNew() { _newChapters.value = 0 }
+    fun consumeResult() { _refreshResult.value = null }
 }

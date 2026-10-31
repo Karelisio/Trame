@@ -1,5 +1,7 @@
 package com.karelisio.trame.ui.reader
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Bitmap
@@ -33,18 +35,15 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +59,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karelisio.trame.ui.components.Cover
+import com.karelisio.trame.ui.fx.HalftoneLoader
 import com.karelisio.trame.ui.components.sharedElement
 import kotlinx.coroutines.delay
 
@@ -144,7 +144,12 @@ fun WebReaderScreen(vm: WebReaderViewModel, onBack: () -> Unit) {
                         state.coverUrl, state.seriesTitle,
                         Modifier.sharedElement("cover-${vm.seriesId}").width(160.dp).height(228.dp).clip(MaterialTheme.shapes.extraLarge),
                     )
-                    LoadingIndicator(Modifier.padding(top = 24.dp).size(56.dp), color = Color.White)
+                    HalftoneLoader(
+                        Modifier.padding(top = 28.dp),
+                        size = 64.dp,
+                        color = Color.White,
+                        container = Color.White.copy(alpha = 0.12f),
+                    )
                 }
             }
         }

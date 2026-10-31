@@ -54,6 +54,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karelisio.trame.data.db.LocalBookDao
 import com.karelisio.trame.data.db.LocalBookEntity
 import com.karelisio.trame.ui.components.Cover
+import com.karelisio.trame.ui.components.pressBounce
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.karelisio.trame.ui.components.cascadeIn
 import kotlinx.coroutines.launch
 
@@ -155,7 +157,14 @@ fun LocalLibraryScreen(dao: LocalBookDao, onBack: () -> Unit, onOpen: (String) -
 
 @Composable
 private fun LocalBookRow(b: LocalBookEntity, onClick: () -> Unit, onRemove: () -> Unit, modifier: Modifier = Modifier) {
-    Surface(onClick = onClick, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = modifier.fillMaxWidth()) {
+    val interaction = remember { MutableInteractionSource() }
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        interactionSource = interaction,
+        modifier = modifier.pressBounce(interaction, 0.97f).fillMaxWidth(),
+    ) {
         Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
             Cover(b.coverUri, b.name, Modifier.width(56.dp).height(80.dp).clip(MaterialTheme.shapes.medium))
             Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {

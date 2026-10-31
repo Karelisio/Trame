@@ -31,6 +31,25 @@ class MainActivity : ComponentActivity() {
         var onboarded by mutableStateOf<Boolean?>(null)
         lifecycleScope.launch { onboarded = settings.isOnboarded() }
         splash.setKeepOnScreenCondition { onboarded == null }
+        // Sortie du splash : la bulle grossit et s'efface (sauf animations réduites).
+        splash.setOnExitAnimationListener { provider ->
+            val reduce = android.provider.Settings.Global.getFloat(
+                contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f,
+            ) == 0f
+            if (reduce) { provider.remove(); return@setOnExitAnimationListener }
+            val icon = provider.iconView
+            icon.animate()
+                .scaleX(1.6f).scaleY(1.6f).alpha(0f)
+                .setDuration(380)
+                .setInterpolator(android.view.animation.AnticipateInterpolator(1.2f))
+                .start()
+            provider.view.animate()
+                .alpha(0f)
+                .setStartDelay(120)
+                .setDuration(320)
+                .withEndAction { provider.remove() }
+                .start()
+        }
         setContent {
             TrameTheme {
                 onboarded?.let { ob ->

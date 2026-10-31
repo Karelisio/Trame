@@ -6,6 +6,13 @@ Liseuse de mangas Android (Kotlin, Jetpack Compose, Material 3 Expressive) qui s
 - Lecture officielle : [MANGA Plus](https://mangaplus.shueisha.co.jp) (liens fournis par MangaDex), dans une WebView intégrée. Aucun scraping.
 - Fichiers locaux : CBZ/ZIP et dossiers d'images.
 
+## Animations signature
+
+- **Trame** : transitions d'écran, apparition des couvertures et chargements faits d'une trame de points (shader AGSL sur Android 13+, rendu Canvas en repli). En avant, l'écran se révèle depuis le doigt ; au retour (y compris le geste prédictif), il se dissout depuis le bouton retour.
+- **Lignes de vitesse** : tirer-pour-actualiser, et case « NOUVEAU ! » plein écran quand un chapitre sort pendant que l'appli est ouverte.
+- **Bulle** : badges « Nouveau » / non lus et notifications in-app en bulles de dialogue qui « pop » avec un ressort.
+- Le réglage système « Supprimer les animations » est respecté partout.
+
 ## Publier une version
 
 1. Modifier le fichier `VERSION` (ex. `0.2.0`).
@@ -61,6 +68,12 @@ Prérequis : JDK 17+, Android SDK (plateforme 37).
 ```sh
 ./gradlew :app:assembleDebug
 ./gradlew :app:testDebugUnitTest
+```
+
+Captures des effets signature (trame, lignes de vitesse, bulles, transitions), rendues par Robolectric + Roborazzi dans `app/build/screenshots/`, avec compilation du shader AGSL par le vrai compilateur SkSL :
+
+```sh
+./gradlew :app:testDebugUnitTest -Pscreenshots
 ```
 
 Release signée en local : créer `keystore.properties` à la racine (non commité) :

@@ -2,6 +2,12 @@ package com.karelisio.trame.ui.components
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.BoundsTransform
+import androidx.compose.foundation.interaction.InteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -19,6 +25,9 @@ import kotlinx.coroutines.launch
 val LocalSharedTransitionScope = compositionLocalOf<SharedTransitionScope?> { null }
 val LocalNavAnimatedScope = compositionLocalOf<AnimatedVisibilityScope?> { null }
 
+/** Trajectoire des éléments partagés : ressort légèrement rebondi (M3 Expressive). */
+private val ExpressiveBounds = BoundsTransform { _, _ -> spring(dampingRatio = 0.82f, stiffness = 340f, visibilityThreshold = Rect.VisibilityThreshold) }
+
 /** Élément partagé (couverture → fiche → lecteur). Sans effet si aucun scope n'est fourni. */
 @Composable
 fun Modifier.sharedElement(key: String): Modifier {
@@ -28,6 +37,7 @@ fun Modifier.sharedElement(key: String): Modifier {
         this@sharedElement.sharedElement(
             sharedContentState = rememberSharedContentState(key),
             animatedVisibilityScope = anim,
+            boundsTransform = ExpressiveBounds,
         )
     }
 }
@@ -40,6 +50,7 @@ fun Modifier.sharedBounds(key: String): Modifier {
         this@sharedBounds.sharedBounds(
             sharedContentState = rememberSharedContentState(key),
             animatedVisibilityScope = anim,
+            boundsTransform = ExpressiveBounds,
         )
     }
 }
@@ -64,4 +75,24 @@ fun Modifier.cascadeIn(index: Int, key: Any = index): Modifier {
         scaleX = 0.9f + 0.1f * p
         scaleY = 0.9f + 0.1f * p
     }
+}
+
+/**
+ * Micro-interaction : l'élément s'enfonce légèrement quand on appuie, puis rebondit.
+ * À combiner avec le même [interaction] que le clickable / Surface.
+ */
+@Composable
+fun Modifier.pressBounce(interaction: InteractionSource, pressedScale: Float = 0.95f): Modifier {
+    val reduce = LocalReduceMotion.current
+    val pressed by interaction.collectIsPressedAsState()
+    val scale = remember { Animatable(1f) }
+    LaunchedEffect(pressed) {
+        if (reduce) return@LaunchedEffect
+        scale.animateTo(
+            if (pressed) pressedScale else 1f,
+            if (pressed) spring(Spring.DampingRatioNoBouncy, Spring.StiffnessHigh)
+            else spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium),
+        )
+    }
+    return graphicsLayer { scaleX = scale.value; scaleY = scale.value }
 }

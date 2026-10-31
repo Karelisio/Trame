@@ -1,5 +1,7 @@
 package com.karelisio.trame.ui.local
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -15,7 +17,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,7 +25,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -34,7 +34,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -45,12 +44,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,6 +72,8 @@ import com.karelisio.trame.data.repo.ReaderPrefs
 import com.karelisio.trame.ui.components.rememberZoomState
 import com.karelisio.trame.ui.components.zoomable
 import com.karelisio.trame.ui.reader.ImmersiveMode
+import com.karelisio.trame.ui.fx.HalftoneLoader
+import com.karelisio.trame.ui.fx.HalftonePlaceholder
 import com.karelisio.trame.ui.theme.LocalReduceMotion
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -119,7 +118,11 @@ fun LocalReaderScreen(vm: LocalReaderViewModel, onBack: () -> Unit) {
 
     Box(Modifier.fillMaxSize().background(prefs.filter.background())) {
         when (val s = state) {
-            LocalReaderState.Loading -> LoadingIndicator(Modifier.align(Alignment.Center).size(72.dp))
+            LocalReaderState.Loading -> HalftoneLoader(
+                Modifier.align(Alignment.Center),
+                color = Color.White,
+                container = Color.White.copy(alpha = 0.12f),
+            )
             is LocalReaderState.Error -> Text(s.message, color = Color.White, modifier = Modifier.align(Alignment.Center).padding(32.dp))
             is LocalReaderState.Ready -> Reader(s, prefs, vm, onBack)
         }
@@ -224,7 +227,7 @@ private fun Page(source: PageSource, index: Int, filter: ColorFilter?, scale: Co
     LaunchedEffect(source, index) { model = runCatching { source.page(index) }.getOrNull() }
     val m = model
     if (m == null) {
-        Box(modifier.aspectRatio(0.7f), contentAlignment = Alignment.Center) { LoadingIndicator() }
+        HalftonePlaceholder(modifier.aspectRatio(0.7f), color = Color.White.copy(alpha = 0.12f))
         return
     }
     SubcomposeAsyncImage(
@@ -232,7 +235,7 @@ private fun Page(source: PageSource, index: Int, filter: ColorFilter?, scale: Co
         contentDescription = "Page ${index + 1}",
         contentScale = scale,
         colorFilter = filter,
-        loading = { Box(Modifier.fillMaxWidth().aspectRatio(0.7f), contentAlignment = Alignment.Center) { LoadingIndicator() } },
+        loading = { HalftonePlaceholder(Modifier.fillMaxWidth().aspectRatio(0.7f), color = Color.White.copy(alpha = 0.12f)) },
         modifier = modifier,
     )
 }

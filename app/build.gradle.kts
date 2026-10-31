@@ -57,6 +57,18 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all { test ->
+                // Les captures (lentes, téléchargent android-all) ne tournent qu'à la demande.
+                if (!project.hasProperty("screenshots")) test.exclude("**/*Screenshot*")
+                else test.systemProperty("roborazzi.test.record", "true")
+                System.getenv("ROBOLECTRIC_REPO")?.let { test.systemProperty("robolectric.dependency.repo.url", it) }
+            }
+        }
+    }
 }
 
 kotlin {
@@ -92,6 +104,14 @@ dependencies {
     implementation(libs.compose.material.icons)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
+    // Captures d'écran des effets (Robolectric + Roborazzi) : ./gradlew :app:testDebugUnitTest -Pscreenshots
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.androidx.test.junit)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)

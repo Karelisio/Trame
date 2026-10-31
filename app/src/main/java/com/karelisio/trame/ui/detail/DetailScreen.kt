@@ -67,6 +67,10 @@ import com.karelisio.trame.ui.components.sharedElement
 import com.karelisio.trame.ui.components.statusLabel
 import com.karelisio.trame.ui.library.SourceFooter
 import com.karelisio.trame.ui.calendar.ReleaseCard
+import com.karelisio.trame.ui.fx.LocalBubbles
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.ui.graphics.graphicsLayer
 import com.karelisio.trame.ui.search.FavoriteMorphButton
 import java.text.DateFormat
 import java.util.Date
@@ -79,12 +83,19 @@ fun DetailScreen(vm: DetailViewModel, onBack: () -> Unit, onRead: (chapterId: St
     val error by vm.error.collectAsStateWithLifecycle()
     val estimate by vm.estimate.collectAsStateWithLifecycle()
     val haptics = LocalHapticFeedback.current
+    val bubbles = LocalBubbles.current
     var menu by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+    // Décalage de défilement de l'en-tête (pour la parallaxe), lu au dessin uniquement.
+    val headerScroll = {
+        if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset.toFloat() else 2000f
+    }
     val series = item?.series
     val readThrough = maxOf(series?.baselineChapter ?: -1.0, series?.lastReadChapter ?: -1.0)
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(bottom = 32.dp),
             modifier = Modifier.fillMaxSize().navigationBarsPadding(),
         ) {
@@ -96,7 +107,15 @@ fun DetailScreen(vm: DetailViewModel, onBack: () -> Unit, onRead: (chapterId: St
                     status = series?.status,
                     year = series?.year,
                     favorite = series?.isFavorite == true,
-                    onToggleFavorite = vm::toggleFavorite,
+                    onToggleFavorite = {
+                        val following = series?.isFavorite == true
+                        vm.toggleFavorite()
+                        bubbles.show(
+                            if (following) "Tu ne suis plus ${series?.title.orEmpty()}" else "${series?.title.orEmpty()} ajouté à ta bibliothèque",
+                            if (following) Icons.Rounded.Close else Icons.Rounded.Check,
+                        )
+                    },
+                    scroll = headerScroll,
                 )
             }
             continueChapter(chapters.orEmpty(), readThrough)?.let { c ->
@@ -156,6 +175,10 @@ fun DetailScreen(vm: DetailViewModel, onBack: () -> Unit, onRead: (chapterId: St
                     onLongClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         vm.toggleRead(c)
+                        bubbles.show(
+                            "Chapitre ${c.number ?: "?"} marqué ${if (c.readAt == null) "lu" else "non lu"}",
+                            if (c.readAt == null) Icons.Rounded.Check else Icons.Rounded.Close,
+                        )
                     },
                 )
             }
@@ -177,11 +200,23 @@ private fun Header(
     year: Int?,
     favorite: Boolean,
     onToggleFavorite: () -> Unit,
+    scroll: () -> Float,
 ) {
     Box(Modifier.fillMaxWidth()) {
-        // Fond : couverture floutée qui se fond dans la surface.
+        // Fond : couverture floutée qui se fond dans la surface, en parallaxe (défile deux fois moins vite).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            Cover(coverUrl, "", Modifier.matchParentSize().blur(40.dp).alpha(0.55f))
+            Cover(
+                coverUrl, "",
+                Modifier.matchParentSize()
+                    .graphicsLayer {
+                        val y = scroll()
+                        translationY = y * 0.5f
+                        val zoom = 1.15f + (y / 4000f).coerceAtMost(0.2f)
+                        scaleX = zoom; scaleY = zoom
+                    }
+                    .blur(40.dp)
+                    .alpha(0.55f),
+            )
         }
         Box(
             Modifier.matchParentSize().background(
@@ -189,7 +224,15 @@ private fun Header(
             ),
         )
         Column(
-            Modifier.fillMaxWidth().statusBarsPadding().padding(top = 56.dp, start = 20.dp, end = 20.dp, bottom = 12.dp),
+            Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    val y = scroll()
+                    translationY = y * 0.18f
+                    alpha = 1f - (y / 1400f).coerceIn(0f, 0.5f)
+                }
+                .statusBarsPadding()
+                .padding(top = 56.dp, start = 20.dp, end = 20.dp, bottom = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Cover(

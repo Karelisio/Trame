@@ -1,5 +1,6 @@
 package com.karelisio.trame.ui.search
 
+import androidx.compose.runtime.getValue
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -24,7 +25,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -33,7 +33,6 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -42,7 +41,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -60,6 +58,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karelisio.trame.data.db.SeriesSource
 import com.karelisio.trame.data.repo.SeriesSummary
 import com.karelisio.trame.ui.components.Cover
+import com.karelisio.trame.ui.components.pressBounce
+import com.karelisio.trame.ui.fx.HalftoneLoader
+import com.karelisio.trame.ui.fx.LocalBubbles
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.karelisio.trame.ui.components.MorphShape
 import com.karelisio.trame.ui.components.cascadeIn
 import com.karelisio.trame.ui.components.sharedBounds
@@ -73,6 +75,7 @@ fun SearchScreen(vm: SearchViewModel, onBack: () -> Unit, onOpen: (String) -> Un
     val favorites by vm.favorites.collectAsStateWithLifecycle()
     val focus = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
+    val bubbles = LocalBubbles.current
     LaunchedEffect(Unit) { focus.requestFocus() }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
@@ -117,7 +120,7 @@ fun SearchScreen(vm: SearchViewModel, onBack: () -> Unit, onOpen: (String) -> Un
             modifier = Modifier.fillMaxSize(),
         ) { mode ->
             when (mode) {
-                0 -> Box(Modifier.fillMaxSize(), Alignment.Center) { LoadingIndicator(Modifier.size(64.dp)) }
+                0 -> Box(Modifier.fillMaxSize(), Alignment.Center) { HalftoneLoader() }
                 1 -> Box(Modifier.fillMaxSize().padding(32.dp), Alignment.Center) {
                     Text(state.error.orEmpty(), color = MaterialTheme.colorScheme.error)
                 }
@@ -139,7 +142,14 @@ fun SearchScreen(vm: SearchViewModel, onBack: () -> Unit, onOpen: (String) -> Un
                         ResultRow(
                             s,
                             favorite = s.id in favorites,
-                            onToggle = { vm.toggleFavorite(s) },
+                            onToggle = {
+                                val adding = s.id !in favorites
+                                vm.toggleFavorite(s)
+                                bubbles.show(
+                                    if (adding) "${s.title} ajouté à ta bibliothèque" else "${s.title} retiré",
+                                    if (adding) Icons.Rounded.Check else Icons.Rounded.Close,
+                                )
+                            },
                             onClick = { scope.launch { onOpen(vm.prepareOpen(s)) } },
                             modifier = Modifier.animateItem().cascadeIn(i, s.id),
                         )
@@ -158,11 +168,13 @@ private fun ResultRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val interaction = remember { MutableInteractionSource() }
     Surface(
         onClick = onClick,
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = modifier.fillMaxWidth(),
+        interactionSource = interaction,
+        modifier = modifier.pressBounce(interaction, 0.97f).fillMaxWidth(),
     ) {
         Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
             Cover(
