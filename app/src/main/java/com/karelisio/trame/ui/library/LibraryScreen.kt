@@ -32,6 +32,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.karelisio.trame.domain.ReleaseEstimate
+import com.karelisio.trame.permissions.AppPermission
+import com.karelisio.trame.ui.onboarding.rememberPermissionStates
+import androidx.compose.material3.Surface
 import com.karelisio.trame.domain.ReleaseStatus
 import com.karelisio.trame.ui.components.rememberNow
 import com.karelisio.trame.ui.components.shortUntil
@@ -83,6 +86,7 @@ fun LibraryScreen(
     onHistory: () -> Unit,
     onLocal: () -> Unit,
     onCalendar: () -> Unit,
+    onPermissions: () -> Unit,
 ) {
     val items by vm.items.collectAsStateWithLifecycle()
     val refreshing by vm.refreshing.collectAsStateWithLifecycle()
@@ -169,6 +173,8 @@ fun LibraryScreen(
             },
         ) {
             val list = items
+            val perms = rememberPermissionStates()
+            val batteryMissing = perms[AppPermission.BATTERY] == false
             when {
                 list == null -> Box(Modifier.fillMaxSize(), Alignment.Center) { ContainedLoadingIndicator() }
                 list.isEmpty() -> EmptyLibrary(onSearch)
@@ -179,6 +185,21 @@ fun LibraryScreen(
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
+                    if (batteryMissing) item(span = { GridItemSpan(maxLineSpan) }) {
+                        Surface(
+                            onClick = onPermissions,
+                            shape = MaterialTheme.shapes.large,
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            modifier = Modifier.animateItem(),
+                        ) {
+                            Text(
+                                "Vérification en arrière-plan bloquée : touche pour autoriser.",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.padding(16.dp),
+                            )
+                        }
+                    }
                     itemsIndexed(list) { index, item ->
                         SeriesCard(
                             item,

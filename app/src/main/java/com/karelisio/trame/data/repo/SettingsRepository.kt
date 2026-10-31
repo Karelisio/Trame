@@ -26,6 +26,7 @@ class SettingsRepository(private val context: Context) {
         val language = stringPreferencesKey("chapter_language")
         val interval = intPreferencesKey("check_interval_hours")
         val seeded = booleanPreferencesKey("seeded")
+        val onboarded = booleanPreferencesKey("onboarded")
         val readerMode = stringPreferencesKey("reader_mode")
         val readerRtl = booleanPreferencesKey("reader_rtl")
         val readerFilter = stringPreferencesKey("reader_filter")
@@ -72,6 +73,12 @@ class SettingsRepository(private val context: Context) {
             p[Keys.readerFilter] = n.filter.name
             p[Keys.readerBrightness] = n.brightness
         }
+    }
+
+    suspend fun isOnboarded() = context.dataStore.data.first()[Keys.onboarded] == true
+
+    suspend fun setOnboarded() {
+        context.dataStore.edit { it[Keys.onboarded] = true }
     }
 
     suspend fun isSeeded() = context.dataStore.data.first()[Keys.seeded] == true

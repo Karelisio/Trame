@@ -22,6 +22,9 @@ import com.karelisio.trame.ui.library.LibraryViewModel
 import com.karelisio.trame.ui.search.SearchScreen
 import com.karelisio.trame.ui.search.SearchViewModel
 import com.karelisio.trame.ui.settings.SettingsScreen
+import com.karelisio.trame.ui.settings.PermissionsScreen
+import com.karelisio.trame.ui.onboarding.OnboardingScreen
+import androidx.navigation.NavDestination.Companion.hasRoute
 import com.karelisio.trame.ui.reader.WebReaderScreen
 import com.karelisio.trame.ui.reader.WebReaderViewModel
 import com.karelisio.trame.ui.history.HistoryScreen
@@ -37,6 +40,8 @@ import androidx.compose.runtime.getValue
 import com.karelisio.trame.ReadRequest
 
 @Serializable object LibraryRoute
+@Serializable object OnboardingRoute
+@Serializable object PermissionsRoute
 @Serializable object SearchRoute
 @Serializable object SettingsRoute
 @Serializable data class DetailRoute(val id: String)
@@ -47,10 +52,11 @@ import com.karelisio.trame.ReadRequest
 @Serializable data class LocalReaderRoute(val uri: String)
 
 @Composable
-fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
+fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>, startOnboarding: Boolean, onOnboarded: () -> Unit) {
     val nav = rememberNavController()
     val request by readRequests.collectAsState()
     LaunchedEffect(request) {
+        if (startOnboarding && nav.currentDestination?.hasRoute(OnboardingRoute::class) == true) return@LaunchedEffect
         request?.let {
             nav.navigate(ReaderRoute(it.seriesId, it.chapterId)) { launchSingleTop = true }
             readRequests.value = null
@@ -59,7 +65,13 @@ fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
     val app = LocalContext.current.applicationContext as TrameApp
     SharedTransitionLayout {
         CompositionLocalProvider(LocalSharedTransitionScope provides this) {
-            NavHost(nav, startDestination = LibraryRoute) {
+            NavHost(nav, startDestination = if (startOnboarding) OnboardingRoute else LibraryRoute) {
+                screen<OnboardingRoute> {
+                    OnboardingScreen(onFinish = {
+                        onOnboarded()
+                        nav.navigate(LibraryRoute) { popUpTo(OnboardingRoute) { inclusive = true } }
+                    })
+                }
                 screen<LibraryRoute> {
                     LibraryScreen(
                         vm = viewModel { LibraryViewModel(app.repository) },
@@ -69,6 +81,7 @@ fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
                         onHistory = { nav.navigate(HistoryRoute) },
                         onLocal = { nav.navigate(LocalRoute) },
                         onCalendar = { nav.navigate(CalendarRoute) },
+                        onPermissions = { nav.navigate(PermissionsRoute) },
                     )
                 }
                 screen<SearchRoute> {
@@ -118,7 +131,10 @@ fun TrameNavHost(readRequests: MutableStateFlow<ReadRequest?>) {
                     CalendarScreen(app.repository, onBack = { nav.popBackStack() }, onOpen = { nav.navigate(DetailRoute(it)) })
                 }
                 screen<SettingsRoute> {
-                    SettingsScreen(app.settings, app.repository, onBack = { nav.popBackStack() })
+                    SettingsScreen(app.settings, app.repository, onBack = { nav.popBackStack() }, onPermissions = { nav.navigate(PermissionsRoute) })
+                }
+                screen<PermissionsRoute> {
+                    PermissionsScreen(onBack = { nav.popBackStack() })
                 }
             }
         }
