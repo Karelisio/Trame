@@ -31,7 +31,7 @@ val Paper = Color(0xFFFFF8EE)
 val PaperDim = Color(0xFFF3E9D8)
 val Ink = Color(0xFF1E1B18)
 
-private val LightFallback = lightColorScheme(
+val LightFallback = lightColorScheme(
     primary = InkRed,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFFFDAD6),
@@ -55,7 +55,7 @@ private val LightFallback = lightColorScheme(
     outline = Color(0xFF857371),
 )
 
-private val DarkFallback = darkColorScheme(
+val DarkFallback = darkColorScheme(
     primary = InkRedDark,
     onPrimary = Color(0xFF68000F),
     primaryContainer = Color(0xFF8F0D1C),

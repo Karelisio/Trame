@@ -12,6 +12,7 @@ import androidx.work.WorkerParameters
 import androidx.work.BackoffPolicy
 import com.karelisio.trame.TrameApp
 import com.karelisio.trame.notify.Notifier
+import com.karelisio.trame.widget.TrameWidget
 import java.util.concurrent.TimeUnit
 
 /** Vérifie périodiquement les nouveaux chapitres de toutes les séries suivies. */
@@ -26,6 +27,7 @@ class CheckWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             val fresh = app.database.series().get(series.id) ?: series
             notifier.notifyNewChapters(fresh, chapters)
         }
+        TrameWidget.refresh(applicationContext)
         return Result.success()
     }
 

@@ -98,6 +98,8 @@ dependencies {
     ksp(libs.room.compiler)
 
     implementation(libs.work.runtime)
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
     implementation(libs.datastore.preferences)
 
     implementation(libs.coil.compose)

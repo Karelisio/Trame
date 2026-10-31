@@ -21,7 +21,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import com.karelisio.trame.notify.Notifier
 import com.karelisio.trame.work.CheckWorker
+import com.karelisio.trame.widget.TrameWidget
+import kotlinx.coroutines.flow.debounce
 
+@OptIn(kotlinx.coroutines.FlowPreview::class)
 class TrameApp : Application(), SingletonImageLoader.Factory {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val database by lazy { TrameDatabase.build(this) }
@@ -41,6 +44,10 @@ class TrameApp : Application(), SingletonImageLoader.Factory {
             repository.observeLibrary().map { list -> list.map { it.series } }
                 .distinctUntilChanged { a, b -> a.map { it.id to it.title } == b.map { it.id to it.title } }
                 .collect { notifier.syncChannels(it) }
+        }
+        // Widget : mis à jour quand la bibliothèque change (lecture, nouveaux chapitres…).
+        appScope.launch {
+            repository.observeLibrary().debounce(1500).collect { TrameWidget.refresh(this@TrameApp) }
         }
     }
 
